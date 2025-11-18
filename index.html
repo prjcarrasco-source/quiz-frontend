@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Preguntas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .setup-section {
+            text-align: center;
+        }
+
+        .setup-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .setup-section label {
+            display: block;
+            font-size: 1.1em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+
+        select {
+            width: 200px;
+            padding: 12px;
+            font-size: 1.1em;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .question-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            border-left: 5px solid #667eea;
+        }
+
+        .question-card.correct {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+
+        .question-card.incorrect {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .question-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .question-text {
+            font-size: 1.2em;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .option:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .option.selected {
+            border-color: #667eea;
+            background: #e8eeff;
+        }
+
+        .option.correct-answer {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .option.wrong-answer {
+            border-color: #dc3545;
+            background: #f8d7da;
+        }
+
+        .option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+
+        .option label {
+            flex: 1;
+            cursor: pointer;
+            font-size: 1.05em;
+        }
+
+        .submit-section {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .results-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .results-header h2 {
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+
+        .score-display {
+            font-size: 3em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .score-details {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        .score-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .score-item .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .score-item .value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .result-icon {
+            display: inline-block;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 25px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .result-icon.correct {
+            background: #28a745;
+            color: white;
+        }
+
+        .result-icon.incorrect {
+            background: #dc3545;
+            color: white;
+        }
+
+        .answer-label {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .answer-label.correct {
+            background: #28a745;
+            color: white;
+        }
+
+        .answer-label.incorrect {
+            background: #dc3545;
+            color: white;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #f5c6cb;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .score-details {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Simulador de Preguntas</h1>
+
+        <!-- Sección de configuración -->
+        <div id="setupSection" class="card setup-section">
+            <h2>Configura tu Test</h2>
+            <label for="questionCount">¿Cuántas preguntas deseas responder?</label>
+            <select id="questionCount">
+                <option value="1">1 pregunta</option>
+                <option value="2">2 preguntas</option>
+                <option value="3">3 preguntas</option>
+                <option value="4">4 preguntas</option>
+                <option value="5" selected>5 preguntas</option>
+                <option value="6">6 preguntas</option>
+                <option value="7">7 preguntas</option>
+                <option value="8">8 preguntas</option>
+                <option value="9">9 preguntas</option>
+                <option value="10">10 preguntas</option>
+            </select>
+            <br>
+            <button onclick="startTest()">Comenzar Test</button>
+        </div>
+
+        <!-- Sección de carga -->
+        <div id="loadingSection" class="card loading hidden">
+            <div class="spinner"></div>
+            <p>Cargando preguntas...</p>
+        </div>
+
+        <!-- Mensaje de error -->
+        <div id="errorSection" class="card hidden">
+            <div class="error-message" id="errorMessage"></div>
+            <button onclick="location.reload()">Intentar de nuevo</button>
+        </div>
+
+        <!-- Sección del test -->
+        <div id="testSection" class="hidden">
+            <div id="questionsContainer"></div>
+            <div class="card submit-section">
+                <button id="submitBtn" onclick="submitTest()">📝 Entregar Test</button>
+            </div>
+        </div>
+
+        <!-- Sección de resultados -->
+        <div id="resultsSection" class="hidden">
+            <div class="results-header">
+                <h2>📊 Resultados del Test</h2>
+                <div class="score-display" id="scoreDisplay">0/0</div>
+                <div class="score-details">
+                    <div class="score-item">
+                        <span class="label">Correctas</span>
+                        <span class="value" style="color: #28a745;" id="correctCount">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="label">Incorrectas</span>
+                        <span class="value" style="color: #dc3545;" id="incorrectCount">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="label">Porcentaje</span>
+                        <span class="value" id="percentage">0%</span>
+                    </div>
+                </div>
+            </div>
+            <div id="resultsContainer"></div>
+            <div class="card submit-section">
+                <button onclick="location.reload()">🔄 Nuevo Test</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ⚙️ CONFIGURACIÓN - Cambia esta URL por la de tu API en Render
+        const API_URL = 'https://quiz-backend-4gd4.onrender.com';
+
+        let currentQuestions = [];
+        let userAnswers = {};
+
+        // Iniciar el test
+        async function startTest() {
+            const count = document.getElementById('questionCount').value;
+            
+            // Ocultar setup, mostrar loading
+            document.getElementById('setupSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+
+            try {
+                const response = await fetch(`${API_URL}/api/get-questions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cantidad: parseInt(count) })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error del servidor: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.preguntas || data.preguntas.length === 0) {
+                    throw new Error('No se recibieron preguntas del servidor');
+                }
+
+                currentQuestions = data.preguntas;
+                userAnswers = {};
+                
+                renderQuestions();
+                
+                // Mostrar sección del test
+                document.getElementById('loadingSection').classList.add('hidden');
+                document.getElementById('testSection').classList.remove('hidden');
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Error al cargar las preguntas: ${error.message}`);
+            }
+        }
+
+        // Renderizar preguntas
+        function renderQuestions() {
+            const container = document.getElementById('questionsContainer');
+            container.innerHTML = '';
+
+            currentQuestions.forEach((question, index) => {
+                const questionCard = document.createElement('div');
+                questionCard.className = 'card question-card';
+                questionCard.innerHTML = `
+                    <span class="question-number">Pregunta ${index + 1}</span>
+                    <div class="question-text">${question.pregunta}</div>
+                    <div class="options" id="options-${question.id}">
+                        ${question.opciones.map(opcion => `
+                            <div class="option" onclick="selectOption('${question.id}', '${opcion.codigo}')">
+                                <input 
+                                    type="radio" 
+                                    name="question-${question.id}" 
+                                    id="option-${question.id}-${opcion.codigo}"
+                                    value="${opcion.codigo}"
+                                >
+                                <label for="option-${question.id}-${opcion.codigo}">
+                                    <strong>${opcion.codigo}.</strong> ${opcion.texto}
+                                </label>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(questionCard);
+            });
+        }
+
+        // Seleccionar una opción
+        function selectOption(questionId, optionCode) {
+            const radio = document.getElementById(`option-${questionId}-${optionCode}`);
+            radio.checked = true;
+            userAnswers[questionId] = optionCode;
+
+            // Actualizar estilos visuales
+            const optionsContainer = document.getElementById(`options-${questionId}`);
+            const allOptions = optionsContainer.querySelectorAll('.option');
+            allOptions.forEach(opt => opt.classList.remove('selected'));
+            
+            const selectedOption = radio.closest('.option');
+            selectedOption.classList.add('selected');
+
+            // Verificar si todas las preguntas están respondidas
+            updateSubmitButton();
+        }
+
+        // Actualizar estado del botón de enviar
+        function updateSubmitButton() {
+            const submitBtn = document.getElementById('submitBtn');
+            const allAnswered = Object.keys(userAnswers).length === currentQuestions.length;
+            
+            if (allAnswered) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '✅ Entregar Test';
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.textContent = `📝 Entregar Test (${Object.keys(userAnswers).length}/${currentQuestions.length})`;
+            }
+        }
+
+        // Enviar el test
+        async function submitTest() {
+            if (Object.keys(userAnswers).length !== currentQuestions.length) {
+                alert('Por favor responde todas las preguntas antes de entregar el test');
+                return;
+            }
+
+            // Mostrar loading
+            document.getElementById('testSection').classList.add('hidden');
+            document.getElementById('loadingSection').classList.remove('hidden');
+            document.querySelector('#loadingSection p').textContent = 'Evaluando respuestas...';
+
+            try {
+                const respuestas = Object.keys(userAnswers).map(id => ({
+                    id: id,
+                    respuesta: userAnswers[id]
+                }));
+
+                const response = await fetch(`${API_URL}/api/validate-answers`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ respuestas })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Error del servidor: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                showResults(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                showError(`Error al evaluar las respuestas: ${error.message}`);
+            }
+        }
+
+        // Mostrar resultados
+        function showResults(results) {
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('resultsSection').classList.remove('hidden');
+
+            // Actualizar estadísticas
+            const percentage = Math.round((results.puntaje_total / results.total_preguntas) * 100);
+            document.getElementById('scoreDisplay').textContent = `${results.puntaje_total}/${results.total_preguntas}`;
+            document.getElementById('correctCount').textContent = results.correctas;
+            document.getElementById('incorrectCount').textContent = results.incorrectas;
+            document.getElementById('percentage').textContent = `${percentage}%`;
+
+            // Crear mapa de resultados
+            const resultsMap = {};
+            results.resultados.forEach(r => {
+                resultsMap[r.id] = r;
+            });
+
+            // Renderizar preguntas con resultados
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = '';
+
+            currentQuestions.forEach((question, index) => {
+                const result = resultsMap[question.id];
+                const isCorrect = result.correcta;
+
+                const questionCard = document.createElement('div');
+                questionCard.className = `card question-card ${isCorrect ? 'correct' : 'incorrect'}`;
+                
+                questionCard.innerHTML = `
+                    <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                        <span class="question-number">Pregunta ${index + 1}</span>
+                        <span class="result-icon ${isCorrect ? 'correct' : 'incorrect'}">
+                            ${isCorrect ? '✓' : '✗'}
+                        </span>
+                        <span class="answer-label ${isCorrect ? 'correct' : 'incorrect'}">
+                            ${isCorrect ? 'Correcta' : 'Incorrecta'}
+                        </span>
+                    </div>
+                    <div class="question-text">${question.pregunta}</div>
+                    <div class="options">
+                        ${question.opciones.map(opcion => {
+                            const isUserAnswer = result.respuesta_enviada === opcion.codigo;
+                            const isCorrectAnswer = result.respuesta_correcta === opcion.codigo;
+                            
+                            let optionClass = '';
+                            let icon = '';
+                            
+                            if (isCorrectAnswer) {
+                                optionClass = 'correct-answer';
+                                icon = '✓ Respuesta correcta';
+                            } else if (isUserAnswer && !isCorrect) {
+                                optionClass = 'wrong-answer';
+                                icon = '✗ Tu respuesta';
+                            } else if (isUserAnswer) {
+                                icon = '✓ Tu respuesta';
+                            }
+                            
+                            return `
+                                <div class="option ${optionClass}">
+                                    <input 
+                                        type="radio" 
+                                        name="result-${question.id}" 
+                                        ${isUserAnswer ? 'checked' : ''}
+                                        disabled
+                                    >
+                                    <label>
+                                        <strong>${opcion.codigo}.</strong> ${opcion.texto}
+                                        ${icon ? `<span style="margin-left: 10px; font-weight: bold;">${icon}</span>` : ''}
+                                    </label>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+                
+                container.appendChild(questionCard);
+            });
+        }
+
+        // Mostrar error
+        function showError(message) {
+            document.getElementById('loadingSection').classList.add('hidden');
+            document.getElementById('testSection').classList.add('hidden');
+            document.getElementById('errorSection').classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        // Inicializar
+        updateSubmitButton();
+    </script>
+</body>
+</html>
