@@ -391,6 +391,7 @@
 
         let currentQuestions = [];
         let userAnswers = {};
+        let questionMapping = {}; // Mapear códigos visuales (A,B,C,D) a códigos originales
 
         // Iniciar el test
         async function startTest() {
@@ -438,27 +439,40 @@
         function renderQuestions() {
             const container = document.getElementById('questionsContainer');
             container.innerHTML = '';
+            questionMapping = {}; // Resetear mapeo
+
+            const visualCodes = ['A', 'B', 'C', 'D', 'E', 'F'];
 
             currentQuestions.forEach((question, index) => {
+                // Crear mapeo para esta pregunta: código visual -> código original
+                questionMapping[question.id] = {};
+                question.opciones.forEach((opcion, opcionIndex) => {
+                    const visualCode = visualCodes[opcionIndex];
+                    questionMapping[question.id][visualCode] = opcion.codigo;
+                });
+
                 const questionCard = document.createElement('div');
                 questionCard.className = 'card question-card';
                 questionCard.innerHTML = `
                     <span class="question-number">Pregunta ${index + 1}</span>
                     <div class="question-text">${question.pregunta}</div>
                     <div class="options" id="options-${question.id}">
-                        ${question.opciones.map(opcion => `
-                            <div class="option" onclick="selectOption('${question.id}', '${opcion.codigo}')">
-                                <input 
-                                    type="radio" 
-                                    name="question-${question.id}" 
-                                    id="option-${question.id}-${opcion.codigo}"
-                                    value="${opcion.codigo}"
-                                >
-                                <label for="option-${question.id}-${opcion.codigo}">
-                                    <strong>${opcion.codigo}.</strong> ${opcion.texto}
-                                </label>
-                            </div>
-                        `).join('')}
+                        ${question.opciones.map((opcion, opcionIndex) => {
+                            const visualCode = visualCodes[opcionIndex];
+                            return `
+                                <div class="option" onclick="selectOption('${question.id}', '${visualCode}')">
+                                    <input 
+                                        type="radio" 
+                                        name="question-${question.id}" 
+                                        id="option-${question.id}-${visualCode}"
+                                        value="${visualCode}"
+                                    >
+                                    <label for="option-${question.id}-${visualCode}">
+                                        <strong>${visualCode}.</strong> ${opcion.texto}
+                                    </label>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 `;
                 container.appendChild(questionCard);
@@ -466,10 +480,13 @@
         }
 
         // Seleccionar una opción
-        function selectOption(questionId, optionCode) {
-            const radio = document.getElementById(`option-${questionId}-${optionCode}`);
+        function selectOption(questionId, visualCode) {
+            const radio = document.getElementById(`option-${questionId}-${visualCode}`);
             radio.checked = true;
-            userAnswers[questionId] = optionCode;
+            
+            // Guardar el código ORIGINAL del backend usando el mapeo
+            const originalCode = questionMapping[questionId][visualCode];
+            userAnswers[questionId] = originalCode;
 
             // Actualizar estilos visuales
             const optionsContainer = document.getElementById(`options-${questionId}`);
@@ -558,6 +575,7 @@
             // Renderizar preguntas con resultados
             const container = document.getElementById('resultsContainer');
             container.innerHTML = '';
+            const visualCodes = ['A', 'B', 'C', 'D', 'E', 'F'];
 
             currentQuestions.forEach((question, index) => {
                 const result = resultsMap[question.id];
@@ -578,9 +596,12 @@
                     </div>
                     <div class="question-text">${question.pregunta}</div>
                     <div class="options">
-                        ${question.opciones.map(opcion => {
-                            const isUserAnswer = result.respuesta_enviada === opcion.codigo;
-                            const isCorrectAnswer = result.respuesta_correcta === opcion.codigo;
+                        ${question.opciones.map((opcion, opcionIndex) => {
+                            const visualCode = visualCodes[opcionIndex];
+                            const originalCode = opcion.codigo;
+                            
+                            const isUserAnswer = result.respuesta_enviada === originalCode;
+                            const isCorrectAnswer = result.respuesta_correcta === originalCode;
                             
                             let optionClass = '';
                             let icon = '';
@@ -604,7 +625,7 @@
                                         disabled
                                     >
                                     <label>
-                                        <strong>${opcion.codigo}.</strong> ${opcion.texto}
+                                        <strong>${visualCode}.</strong> ${opcion.texto}
                                         ${icon ? `<span style="margin-left: 10px; font-weight: bold;">${icon}</span>` : ''}
                                     </label>
                                 </div>
